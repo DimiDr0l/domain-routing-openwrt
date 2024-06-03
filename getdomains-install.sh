@@ -34,7 +34,7 @@ EOF
 
 add_mark() {
     grep -q "99 vpn" /etc/iproute2/rt_tables || echo '99 vpn' >> /etc/iproute2/rt_tables
-    
+
     if ! uci show network | grep -q mark0x1; then
         printf "\033[32;1mConfigure mark rule\033[0m\n"
         uci add network rule
@@ -60,9 +60,9 @@ add_tunnel() {
 
     while true; do
     read -r -p '' TUNNEL
-        case $TUNNEL in 
+        case $TUNNEL in
 
-        1) 
+        1)
             TUNNEL=wg
             break
             ;;
@@ -72,12 +72,12 @@ add_tunnel() {
             break
             ;;
 
-        3) 
+        3)
             TUNNEL=singbox
             break
             ;;
 
-        4) 
+        4)
             TUNNEL=tun2socks
             break
             ;;
@@ -140,7 +140,7 @@ add_tunnel() {
         if [ "$WG_ENDPOINT_PORT" = '51820' ]; then
             echo $WG_ENDPOINT_PORT
         fi
-        
+
         uci set network.wg0=interface
         uci set network.wg0.proto='wireguard'
         uci set network.wg0.private_key=$WG_PRIVATE_KEY
@@ -208,7 +208,7 @@ cat << 'EOF' > /etc/sing-box/config.json
       "address": ["172.16.250.1/30"],
       "auto_route": false,
       "strict_route": false,
-      "sniff": true 
+      "sniff": true
    }
   ],
   "outbounds": [
@@ -403,7 +403,7 @@ add_zone() {
         uci set firewall.@zone[-1].family='ipv4'
         uci commit firewall
     fi
-    
+
     if [ "$TUNNEL" == 0 ]; then
         printf "\033[32;1mForwarding setting skipped\033[0m\n"
     elif uci show firewall | grep -q "@forwarding.*name='$TUNNEL-lan'"; then
@@ -487,7 +487,7 @@ add_set() {
 add_dns_resolver() {
     echo "Configure DNSCrypt2 or Stubby? It does matter if your ISP is spoofing DNS requests"
     DISK=$(df -m / | awk 'NR==2{ print $2 }')
-    if [[ "$DISK" -lt 32 ]]; then 
+    if [[ "$DISK" -lt 32 ]]; then
         printf "\033[31;1mYour router a disk have less than 32MB. It is not recommended to install DNSCrypt, it takes 10MB\033[0m\n"
     fi
     echo "Select:"
@@ -497,9 +497,9 @@ add_dns_resolver() {
 
     while true; do
     read -r -p '' DNS_RESOLVER
-        case $DNS_RESOLVER in 
+        case $DNS_RESOLVER in
 
-        1) 
+        1)
             echo "Skiped"
             break
             ;;
@@ -509,7 +509,7 @@ add_dns_resolver() {
             break
             ;;
 
-        3) 
+        3)
             DNS_RESOLVER=STUBBY
             break
             ;;
@@ -541,7 +541,7 @@ add_dns_resolver() {
                 uci add_list dhcp.@dnsmasq[0].server="127.0.0.53#53"
                 uci add_list dhcp.@dnsmasq[0].server='/use-application-dns.net/'
                 uci commit dhcp
-                
+
                 printf "\033[32;1mDnsmasq restart\033[0m\n"
 
                 /etc/init.d/dnsmasq restart
@@ -603,9 +603,9 @@ add_getdomains() {
 
     while true; do
     read -r -p '' COUNTRY
-        case $COUNTRY in 
+        case $COUNTRY in
 
-        1) 
+        1)
             COUNTRY=russia_inside
             break
             ;;
@@ -615,12 +615,12 @@ add_getdomains() {
             break
             ;;
 
-        3) 
+        3)
             COUNTRY=ukraine
             break
             ;;
 
-        4) 
+        4)
             echo "Skiped"
             COUNTRY=0
             break
@@ -653,7 +653,12 @@ start () {
 EOF
 cat << 'EOF' >> /etc/init.d/getdomains
     count=0
+    maxCount=10
     while true; do
+        if [ ${count} -eq ${maxCount} ]; then
+            echo "Break on ${maxCount} attempt"
+            break
+        fi
         if curl -m 3 github.com; then
             curl -f $DOMAINS --output /tmp/dnsmasq.d/domains.lst
             break
