@@ -22,13 +22,19 @@ start () {
     DOMAINS=https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Ukraine/inside-dnsmasq-ipset.lst
     {% endif %}
     count=0
+    maxCount=10
     while true; do
+        if [ ${count} -eq ${maxCount} ]; then
+            echo "Break on ${maxCount} attempt"
+            break
+        fi
         if curl -m 3 github.com; then
             curl -f $DOMAINS --output /tmp/dnsmasq.d/domains.lst
             break
         else
             echo "GitHub is not available. Check the internet availability [$count]"
             count=$((count+1))
+            sleep 5
         fi
     done
 
@@ -46,7 +52,12 @@ start () {
     mkdir -p $dir
 
     count=0
+    maxCount=10
     while true; do
+        if [ ${count} -eq ${maxCount} ]; then
+            echo "Break on ${maxCount} attempt"
+            break
+        fi
         if curl -m 3 https://antifilter.download/; then
             {% if list_subnet %}
             curl -f -z $dir/subnet.lst https://antifilter.download/list/subnet.lst --output $dir/subnet.lst
@@ -56,15 +67,16 @@ start () {
             {% endif %}
             {% if list_community %}
             curl -f -z $dir/community.lst https://community.antifilter.download/list/community.lst --output $dir/community.lst
-            {% endif %}  
+            {% endif %}
             break
         else
             echo "antifilter.download is not available. Check the internet availability [$count]"
             count=$((count+1))
+            sleep 5
         fi
     done
 
     echo "Firewall restart"
     /etc/init.d/firewall restart
-    {% endif %}  
+    {% endif %}
 }
