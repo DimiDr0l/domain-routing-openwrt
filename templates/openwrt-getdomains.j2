@@ -3,6 +3,8 @@
 START=99
 
 start () {
+    FILE_PATH="/tmp/dnsmasq.d/domains.lst"
+    DOMAINS_EXCLUDED="youtube googlevideo \.ua"
     {% if ansible_distribution_major_version >= "22" and country == "russia-inside" %}
     DOMAINS=https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-dnsmasq-nfset.lst
     {% endif %}
@@ -29,7 +31,7 @@ start () {
             break
         fi
         if curl -m 3 github.com; then
-            curl -f $DOMAINS --output /tmp/dnsmasq.d/domains.lst
+            curl -f $DOMAINS --output ${FILE_PATH}
             break
         else
             echo "GitHub is not available. Check the internet availability [$count]"
@@ -38,7 +40,16 @@ start () {
         fi
     done
 
-    if dnsmasq --conf-file=/tmp/dnsmasq.d/domains.lst --test 2>&1 | grep -q "syntax check OK"; then
+    if [[ "${DOMAINS_EXCLUDED}" ]]; then
+        echo "Remove excludes domains"
+        for item in ${DOMAINS_EXCLUDED}; do
+            sed -i "/${item}/d" ${FILE_PATH}
+        done
+    else
+        echo "DOMAINS_EXCLUDED not defined"
+    fi
+
+    if dnsmasq --conf-file=${FILE_PATH} --test 2>&1 | grep -q "syntax check OK"; then
         /etc/init.d/dnsmasq restart
     fi
 
